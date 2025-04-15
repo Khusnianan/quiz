@@ -2,8 +2,9 @@ import streamlit as st
 import requests
 import random
 import html
+import time
 
-# Ambil soal quiz dari Open Trivia DB API
+# Fungsi untuk mengambil soal berdasarkan pengaturan
 def get_questions(amount=5, category=None, difficulty="medium"):
     base_url = "https://opentdb.com/api.php"
     params = {
@@ -31,6 +32,42 @@ def get_questions(amount=5, category=None, difficulty="medium"):
             "answer": correct
         })
     return questions
+
+# Pengaturan permainan
+st.sidebar.title("Pengaturan Permainan")
+categories = {
+    "General Knowledge": 9,
+    "Science": 17,
+    "Mathematics": 19,
+    "History": 23,
+    "Geography": 22
+}
+
+# Pengaturan Pengguna
+category = st.sidebar.selectbox("Pilih Kategori Soal", list(categories.keys()))
+difficulty = st.sidebar.radio("Pilih Kesulitan", ("easy", "medium", "hard"))
+num_questions = st.sidebar.slider("Pilih Jumlah Soal", 5, 15, 20, 25)
+timer = st.sidebar.slider("Timer (detik)", 5, 10, 60, 30)
+
+# Inisialisasi Game
+if "questions" not in st.session_state:
+    st.session_state.questions = get_questions(
+        amount=num_questions,
+        category=categories[category],
+        difficulty=difficulty
+    )
+    st.session_state.index = 0
+    st.session_state.score = 0
+
+q = st.session_state.questions[st.session_state.index]
+
+# Timer
+start_time = time.time()
+time_left = timer - (time.time() - start_time)
+if time_left <= 0:
+    st.session_state.index += 1
+    start_time = time.time()
+    time_left = timer
 
 # Styling custom CSS
 st.markdown("""
@@ -85,14 +122,6 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Inisialisasi game
-if "questions" not in st.session_state:
-    st.session_state.questions = get_questions(amount=5)
-    st.session_state.index = 0
-    st.session_state.score = 0
-
-q = st.session_state.questions[st.session_state.index]
-
 # Tampilan Quiz Time
 st.markdown('<div class="main">', unsafe_allow_html=True)
 st.title("🎯 Quiz Time!", anchor="quiz-time")
@@ -102,8 +131,11 @@ st.markdown('<p class="title">Waktu untuk menjawab!</p>', unsafe_allow_html=True
 st.markdown('<p class="question">{}</p>'.format(q["question"]), unsafe_allow_html=True)
 selected = st.radio("Pilih jawaban:", q["options"], key="answer")
 
+# Tampilkan timer
+st.markdown(f"⏰ **Waktu tersisa**: {int(time_left)} detik")
+
 # Check jawaban
-if st.button("Submit Jawaban", key="submit", help="Klik untuk submit jawaban!", on_click=None):
+if st.button("Submit Jawaban", key="submit"):
     if selected == q["answer"]:
         st.success("✅ Benar!")
         st.session_state.score += 1
