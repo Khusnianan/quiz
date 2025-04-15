@@ -32,6 +32,59 @@ def get_questions(amount=5, category=None, difficulty="medium"):
         })
     return questions
 
+# Styling custom CSS
+st.markdown("""
+    <style>
+        .main {
+            background-color: #f0f4f8;
+            padding: 50px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .title {
+            color: #2C3E50;
+            font-family: 'Arial', sans-serif;
+            font-size: 40px;
+            font-weight: bold;
+        }
+        .question {
+            font-size: 22px;
+            color: #34495E;
+            font-family: 'Arial', sans-serif;
+        }
+        .submit-btn {
+            background-color: #1ABC9C;
+            color: white;
+            font-size: 18px;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .submit-btn:hover {
+            background-color: #16A085;
+        }
+        .score {
+            font-size: 30px;
+            color: #27AE60;
+            font-family: 'Arial', sans-serif;
+            font-weight: bold;
+        }
+        .reset-btn {
+            background-color: #E74C3C;
+            color: white;
+            font-size: 18px;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .reset-btn:hover {
+            background-color: #C0392B;
+        }
+    </style>
+""", unsafe_allow_html=True)
+
 # Inisialisasi game
 if "questions" not in st.session_state:
     st.session_state.questions = get_questions(amount=5)
@@ -40,13 +93,17 @@ if "questions" not in st.session_state:
 
 q = st.session_state.questions[st.session_state.index]
 
-st.title("🎯 Quiz Time!")
-st.subheader(f"Soal #{st.session_state.index + 1}")
-st.write(q["question"])
-selected = st.radio("Pilih jawaban:", q["options"])
+# Tampilan Quiz Time
+st.markdown('<div class="main">', unsafe_allow_html=True)
+st.title("🎯 Quiz Time!", anchor="quiz-time")
+st.markdown('<p class="title">Waktu untuk menjawab!</p>', unsafe_allow_html=True)
+
+# Soal & Pilihan
+st.markdown('<p class="question">{}</p>'.format(q["question"]), unsafe_allow_html=True)
+selected = st.radio("Pilih jawaban:", q["options"], key="answer")
 
 # Check jawaban
-if st.button("Submit Jawaban"):
+if st.button("Submit Jawaban", key="submit", help="Klik untuk submit jawaban!", on_click=None):
     if selected == q["answer"]:
         st.success("✅ Benar!")
         st.session_state.score += 1
@@ -56,6 +113,10 @@ if st.button("Submit Jawaban"):
 
     if st.session_state.index >= len(st.session_state.questions):
         st.balloons()
-        st.success(f"🎉 Skor akhir: {st.session_state.score} dari {len(st.session_state.questions)}")
-        if st.button("Main Lagi"):
-            st.session_state.clear()
+        st.markdown(f'<p class="score">🎉 Skor akhir: {st.session_state.score} dari {len(st.session_state.questions)}</p>', unsafe_allow_html=True)
+
+        # Tombol untuk main lagi
+        if st.button("Main Lagi", key="reset", on_click=lambda: st.session_state.clear()):
+            st.experimental_rerun()  # Reload halaman
+
+st.markdown('</div>', unsafe_allow_html=True)
