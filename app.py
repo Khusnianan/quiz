@@ -58,7 +58,7 @@ if "questions" not in st.session_state:
     )
     st.session_state.index = 0
     st.session_state.score = 0
-    st.session_state.start_time = time.time()  # Time when game starts
+    st.session_state.start_time = time.time()  # Inisialisasi waktu saat permainan dimulai
 
 q = st.session_state.questions[st.session_state.index]
 
@@ -144,8 +144,11 @@ if st.button("Submit Jawaban", key="submit"):
         st.session_state.score += 1
     else:
         st.error(f"❌ Salah! Jawaban yang benar: {q['answer']}")
+    
+    # Konfirmasi soal berikutnya
     st.session_state.index += 1
-
+    
+    # Jika sudah selesai semua soal, tampilkan skor akhir
     if st.session_state.index >= len(st.session_state.questions):
         st.balloons()
         st.markdown(f'<p class="score">🎉 Skor akhir: {st.session_state.score} dari {len(st.session_state.questions)}</p>', unsafe_allow_html=True)
@@ -153,5 +156,8 @@ if st.button("Submit Jawaban", key="submit"):
         # Tombol untuk main lagi
         if st.button("Main Lagi", key="reset", on_click=lambda: st.session_state.clear()):
             st.experimental_rerun()  # Reload halaman
+    else:
+        st.session_state.start_time = time.time()  # Restart timer for the next question
+        time_left = timer_duration  # Reset the time left
 
 st.markdown('</div>', unsafe_allow_html=True)
