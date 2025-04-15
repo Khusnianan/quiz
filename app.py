@@ -1,94 +1,61 @@
 import streamlit as st
+import requests
 import random
+import html
 
-# Ukuran grid
-GRID_SIZE = 10
+# Ambil soal quiz dari Open Trivia DB API
+def get_questions(amount=5, category=None, difficulty="medium"):
+    base_url = "https://opentdb.com/api.php"
+    params = {
+        "amount": amount,
+        "type": "multiple",
+        "difficulty": difficulty
+    }
+    if category:
+        params["category"] = category
+
+    response = requests.get(base_url, params=params)
+    data = response.json()
+
+    questions = []
+    for item in data["results"]:
+        q_text = html.unescape(item["question"])
+        correct = html.unescape(item["correct_answer"])
+        options = item["incorrect_answers"]
+        options = [html.unescape(opt) for opt in options]
+        options.append(correct)
+        random.shuffle(options)
+        questions.append({
+            "question": q_text,
+            "options": options,
+            "answer": correct
+        })
+    return questions
 
 # Inisialisasi game
-if "snake" not in st.session_state:
-    st.session_state.snake = [(5, 5)]
-    st.session_state.direction = "RIGHT"
-    st.session_state.food = (random.randint(0, GRID_SIZE - 1), random.randint(0, GRID_SIZE - 1))
+if "questions" not in st.session_state:
+    st.session_state.questions = get_questions(amount=5)
+    st.session_state.index = 0
     st.session_state.score = 0
-    st.session_state.game_over = False
 
-def move_snake():
-    head_x, head_y = st.session_state.snake[-1]
+q = st.session_state.questions[st.session_state.index]
 
-    if st.session_state.direction == "UP":
-        head_y -= 1
-    elif st.session_state.direction == "DOWN":
-        head_y += 1
-    elif st.session_state.direction == "LEFT":
-        head_x -= 1
-    elif st.session_state.direction == "RIGHT":
-        head_x += 1
+st.title("🎯 Quiz Time!")
+st.subheader(f"Soal #{st.session_state.index + 1}")
+st.write(q["question"])
+selected = st.radio("Pilih jawaban:", q["options"])
 
-    new_head = (head_x, head_y)
-
-    # Cek tabrakan
-    if (
-        new_head in st.session_state.snake
-        or head_x < 0 or head_x >= GRID_SIZE
-        or head_y < 0 or head_y >= GRID_SIZE
-    ):
-        st.session_state.game_over = True
-        return
-
-    st.session_state.snake.append(new_head)
-
-    if new_head == st.session_state.food:
+# Check jawaban
+if st.button("Submit Jawaban"):
+    if selected == q["answer"]:
+        st.success("✅ Benar!")
         st.session_state.score += 1
-        while True:
-            new_food = (random.randint(0, GRID_SIZE - 1), random.randint(0, GRID_SIZE - 1))
-            if new_food not in st.session_state.snake:
-                st.session_state.food = new_food
-                break
     else:
-        st.session_state.snake.pop(0)
+        st.error(f"❌ Salah! Jawaban yang benar: {q['answer']}")
+    st.session_state.index += 1
 
-# Tombol arah
-col1, col2, col3 = st.columns(3)
-with col2:
-    if st.button("⬆️"):
-        if st.session_state.direction != "DOWN":
-            st.session_state.direction = "UP"
-
-with col1:
-    if st.button("⬅️"):
-        if st.session_state.direction != "RIGHT":
-            st.session_state.direction = "LEFT"
-
-with col3:
-    if st.button("➡️"):
-        if st.session_state.direction != "LEFT":
-            st.session_state.direction = "RIGHT"
-
-with col2:
-    if st.button("⬇️"):
-        if st.session_state.direction != "UP":
-            st.session_state.direction = "DOWN"
-
-# Gerak ular setiap tombol diklik
-move_snake()
-
-# Render grid
-for y in range(GRID_SIZE):
-    row = ""
-    for x in range(GRID_SIZE):
-        if (x, y) == st.session_state.food:
-            row += "🍎"
-        elif (x, y) in st.session_state.snake:
-            row += "🟩"
-        else:
-            row += "⬛"
-    st.write(row)
-
-# Status
-st.write(f"Skor: {st.session_state.score}")
-if st.session_state.game_over:
-    st.error("💀 Game Over!")
-    if st.button("Main Lagi"):
-        for key in st.session_state.keys():
-            del st.session_state[key]
-        st.experimental_rerun()
+    if st.session_state.index >= len(st.session_state.questions):
+        st.balloons()
+        st.success(f"🎉 Skor akhir: {st.session_state.score} dari {len(st.session_state.questions)}")
+        if st.button("Main Lagi"):
+            st.session_state.clear()
