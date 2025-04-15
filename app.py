@@ -46,8 +46,8 @@ categories = {
 # Pengaturan Pengguna
 category = st.sidebar.selectbox("Pilih Kategori Soal", list(categories.keys()))
 difficulty = st.sidebar.radio("Pilih Kesulitan", ("easy", "medium", "hard"))
-num_questions = st.sidebar.slider("Pilih Jumlah Soal", 5, 15, 20, 25)
-timer = st.sidebar.slider("Timer (detik)", 5, 10, 60, 30)
+num_questions = st.sidebar.slider("Pilih Jumlah Soal", 5, 20, 5)
+timer_duration = st.sidebar.slider("Timer (detik)", 10, 60, 30)
 
 # Inisialisasi Game
 if "questions" not in st.session_state:
@@ -58,16 +58,22 @@ if "questions" not in st.session_state:
     )
     st.session_state.index = 0
     st.session_state.score = 0
+    st.session_state.start_time = time.time()  # Time when game starts
 
 q = st.session_state.questions[st.session_state.index]
 
-# Timer
-start_time = time.time()
-time_left = timer - (time.time() - start_time)
+# Timer dan Update Timer Mundur
+elapsed_time = time.time() - st.session_state.start_time
+time_left = timer_duration - elapsed_time
+
+# Memperbarui Timer di UI
+timer_placeholder = st.empty()
+timer_placeholder.markdown(f"⏰ **Waktu tersisa**: {int(time_left)} detik")
+
 if time_left <= 0:
     st.session_state.index += 1
-    start_time = time.time()
-    time_left = timer
+    st.session_state.start_time = time.time()  # Restart timer for the next question
+    time_left = timer_duration  # Reset the time left
 
 # Styling custom CSS
 st.markdown("""
@@ -131,10 +137,7 @@ st.markdown('<p class="title">Waktu untuk menjawab!</p>', unsafe_allow_html=True
 st.markdown('<p class="question">{}</p>'.format(q["question"]), unsafe_allow_html=True)
 selected = st.radio("Pilih jawaban:", q["options"], key="answer")
 
-# Tampilkan timer
-st.markdown(f"⏰ **Waktu tersisa**: {int(time_left)} detik")
-
-# Check jawaban
+# Cek jawaban
 if st.button("Submit Jawaban", key="submit"):
     if selected == q["answer"]:
         st.success("✅ Benar!")
